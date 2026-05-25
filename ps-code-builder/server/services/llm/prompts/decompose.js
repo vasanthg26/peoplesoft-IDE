@@ -15,8 +15,14 @@ Rules:
 - Return ONLY valid JSON array
 - No explanations, no markdown, no code blocks
 - Just the raw JSON array
-- UI operations (gray, hide, enable, disable, visible) MUST use eventHint: "RowInit"
-- Data validations MUST use eventHint: "SaveEdit" or "FieldEdit"
+- UI operations (gray, hide, enable, disable, visible, read-only, protect) MUST use eventHint: "RowInit"
+- Data validations (validate, check, prevent save, error on save) MUST use eventHint: "SaveEdit" or "FieldEdit"
+- Data manipulation on save (calculate, derive, set value before write) MUST use eventHint: "SavePreChange"
+- CRITICAL: SaveEdit = validation with Error/Warning. SavePreChange = data manipulation, NO Error/Warning allowed.
+- Button click handlers or field-driven updates MUST use eventHint: "FieldChange"
+- Page-level security or page-specific initialization MUST use eventHint: "Activate"
+- Hiding/showing entire pages MUST use eventHint: "PreBuild"
+- Component-wide initialization after load MUST use eventHint: "PostBuild"
 - Record selection: if user says "PO Line", prefer records starting with PO_LINE. If user says "PO Header", prefer PO_HDR. Match by semantic meaning, not alphabetical order.`;
 
 /**
@@ -49,7 +55,7 @@ Return a JSON array where each element has this shape:
     "requirement": "specific validation or logic description for this unit only",
     "record": "RECORD_NAME",
     "field": "FIELD_NAME or null if record/component-level",
-    "eventHint": "FieldEdit|FieldChange|SavePreChange|SaveEdit|RowInit|PostBuild",
+    "eventHint": "FieldEdit|FieldChange|SaveEdit|SavePreChange|RowInit|Activate|PreBuild|PostBuild",
     "level": "field|record|component",
     "executionOrder": 1,
     "hasSetId": false,
@@ -66,8 +72,11 @@ Rules:
 - **CRITICAL**: Use ONLY record names from the Available records list above.
 - **RECORD PRIORITY**: You are FORBIDDEN from selecting staging, derived, or temporary records (names ending in _FS, _STG, _WRK, _VW) if a core transactional record is available. Mapping to a "_WRK" record when the user says "PO Line" is a critical architectural failure. ALWAYS prefer the most physically "heavy" table (e.g., prefer PO_LINE_SHIP over PO_SCHED_WRK).
 - **UI EVENT RULE**: If the requirement is about graying, hiding, enabling, disabling or changing visibility of a field, ALWAYS set eventHint to "RowInit". NEVER use FieldEdit or SaveEdit for UI appearance changes.
-- **DATA EVENT RULE**: If the requirement is a validation or data integrity check, use "SaveEdit" (pre-save) or "FieldEdit" (on field exit).
+- **DATA VALIDATION RULE**: If the requirement is a validation or data integrity check that should stop the save, use "SaveEdit" (cross-field/cross-row) or "FieldEdit" (single-field, on field exit). SaveEdit allows Error/Warning to prevent save.
+- **DATA MANIPULATION RULE**: If the requirement is about calculating, deriving, or setting field values on save (NOT validation), use "SavePreChange". SavePreChange runs after SaveEdit and does NOT allow Error/Warning.
 - **FIELD TARGET RULE**: If the validation targets a single field's value (e.g. 'Amount is not zero'), set "field" to that field name AND set "eventHint" to "SaveEdit" on that specific field. ONLY use "level": "record" if the logic involves multiple fields.
+- **BUTTON/CLICK RULE**: If the requirement involves a button click or user-triggered action, use eventHint "FieldChange" on the button field.
+- **PAGE SECURITY RULE**: If the requirement is about page-level security, role-based access, or page-specific initialization, use eventHint "Activate".
 - **SEARCH RULE**: Use the Field Metadata list below to scan the actual columns of every table. If the user asks to validate a specific concept (e.g. "amount", "date", "status"), read the column lists and cleanly align it with the exact Physical Record that houses that data (e.g., matching "amount" to a table that physically contains the MERCHANDISE_AMT field). NEVER guess or invent field names. If a target field is not in the list, state it explicitly.
 - Set hasSetId, isEffDated, and scrollLevel from the Field Metadata section above
 - Set requiresLoop: true if the logic needs to iterate over multiple rows (e.g. "for each line", "all lines", "every row")

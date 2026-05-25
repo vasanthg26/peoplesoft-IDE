@@ -17,12 +17,24 @@
 
 const EVENT_KEYWORDS = {
   FieldEdit: ['validate', 'check', 'verify', 'invalid', 'must be', 'required'],
-  FieldChange: ['when changed', 'recalculate', 'update', 'on change', 'field change'],
-  SavePreChange: ['on save', 'before save', 'save validation', 'prevent save'],
+  FieldChange: ['when changed', 'recalculate', 'update', 'on change', 'field change',
+    'click button', 'button click', 'press button', 'when clicked', 'transfer to'],
+  SaveEdit: ['save validation', 'prevent save', 'validate on save', 'validate before save',
+    'check on save', 'check before save', 'verify on save', 'error on save',
+    'validate all lines', 'validate all rows', 'cross-field validation'],
+  SavePreChange: ['calculate on save', 'derive on save', 'update before write',
+    'set field on save', 'modify on save', 'compute on save'],
   SavePostChange: ['after save', 'post save', 'when saved'],
-  RowInit: ['on load', 'initialize', 'page load', 'default', 'when opened'],
+  RowInit: ['on load', 'initialize', 'page load', 'when opened',
+    'gray out', 'grey out', 'make read-only', 'read only', 'protect field',
+    'disable field', 'enable field', 'hide field', 'show field',
+    'display only', 'make editable'],
   RowInsert: ['new row', 'when inserted', 'row added'],
-  FieldDefault: ['default value', 'set default', 'initial value'],
+  FieldDefault: ['default value', 'set default', 'initial value', 'default'],
+  Activate: ['page security', 'page-specific', 'when page activates', 'on page load',
+    'page-level security', 'tab change', 'navigate to page'],
+  PreBuild: ['hide page', 'show page', 'before build', 'component variable'],
+  PostBuild: ['after build', 'component load', 'after component loads'],
 };
 
 // Tiebreak order — more specific events win over generic ones
@@ -30,10 +42,14 @@ const EVENT_PRIORITY = [
   'FieldDefault',
   'FieldEdit',
   'FieldChange',
+  'SaveEdit',
   'SavePreChange',
   'SavePostChange',
   'RowInsert',
   'RowInit',
+  'Activate',
+  'PreBuild',
+  'PostBuild',
 ];
 
 // RAG query templates per event — each entry covers a different knowledge angle
@@ -48,10 +64,15 @@ const EVENT_RAG_QUERIES = {
     'FieldChange recalculate update field value syntax',
     'SQLExec function syntax PeopleCode DB lookup',
   ],
+  SaveEdit: [
+    'SaveEdit cross-field cross-row validation event when fires',
+    'Error Warning function syntax PeopleCode save validation',
+    'SaveEdit ActiveRowCount loop rowset validate all rows PeopleCode',
+  ],
   SavePreChange: [
-    'SavePreChange SaveEdit event when fires before save',
-    'SavePreChange validation prevent save PeopleCode',
-    'Error function SavePreChange restrictions',
+    'SavePreChange event when fires data manipulation before SQL write',
+    'SavePreChange derive calculate field values before save PeopleCode',
+    'SavePreChange vs SaveEdit difference restrictions',
   ],
   SavePostChange: [
     'SavePostChange event after save fires',
@@ -61,7 +82,7 @@ const EVENT_RAG_QUERIES = {
   RowInit: [
     'RowInit PostBuild event page load initialize',
     'RowInit default values initialize fields PeopleCode',
-    'SetDefault GetField RowInit syntax',
+    'SetDefault GetField RowInit gray enable disable syntax',
   ],
   RowInsert: [
     'RowInsert event when fires new row added',
@@ -72,6 +93,21 @@ const EVENT_RAG_QUERIES = {
     'FieldDefault event default value PeopleCode',
     'FieldDefault set initial value syntax restrictions',
     'GetField SetDefault FieldDefault example',
+  ],
+  Activate: [
+    'Activate event page-level PeopleCode when fires',
+    'Activate page security role-based display PeopleCode',
+    'Activate vs PostBuild vs PreBuild difference',
+  ],
+  PreBuild: [
+    'PreBuild event hide show pages component PeopleCode',
+    'PreBuild component variable initialization',
+    'PreBuild vs PostBuild vs Activate difference',
+  ],
+  PostBuild: [
+    'PostBuild event component-wide initialization PeopleCode',
+    'PostBuild fires after RowInit component load',
+    'PostBuild vs PreBuild vs Activate difference',
   ],
 };
 

@@ -644,9 +644,19 @@ router.post('/generate', async (req, res) => {
                   ))
             : null;
 
-          // 4e. Translate values — fetch XLAT values for any list_box fields
+          // 4e. Translate values — smart fetch: only for XLAT fields mentioned in requirement
+          const reqLower = unit.requirement.toLowerCase();
           const xlatFields = (keyFields?.fields ?? [])
-            .filter((f) => f.is_list_box)
+            .filter((f) => {
+              if (!f.is_list_box) return false;
+              const name  = (f.field_name || f.FIELDNAME || '').toLowerCase();
+              const label = (f.field_label || f.FIELD_LABEL || '').toLowerCase();
+              // Match field name (e.g. "po_status"), label words (e.g. "status"),
+              // or label as phrase (e.g. "approval status")
+              return reqLower.includes(name)
+                || reqLower.includes(label)
+                || label.split(/\s+/).some((word) => word.length > 3 && reqLower.includes(word));
+            })
             .map((f) => f.field_name || f.FIELDNAME);
 
           const translateValues = xlatFields.length > 0

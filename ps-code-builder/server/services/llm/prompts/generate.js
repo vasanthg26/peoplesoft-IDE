@@ -31,28 +31,100 @@ The "TARGET EVENT" in the user message tells you which event you are generating 
 
 | Event | Fires when | Loop required? | Error/Warning allowed? | Primary use |
 |---|---|---|---|---|
-| SaveEdit | Once per save, before DB write | YES — if record is in a grid (Level ≥ 1), loop all rows | Yes — Error stops save, Warning allows override | Validation |
-| FieldEdit | Field loses focus | NO — current row only | Yes | Field-level validation |
-| FieldChange | Value changes after FieldEdit passes | NO — current row only | NO — use field assignments only | Derived updates, display changes |
-| RowInit | Each row loads/displays | NO — fires per row | NO — NEVER use Error/Warning here | Hide/show, enable/disable fields |
-| SavePreChange | After SaveEdit, before DB write | YES — same as SaveEdit | NO — use field assignments only | Derived field updates |
-| SavePostChange | After DB write | YES — same as SaveEdit | NO | Post-save processing |
-| RowInsert | New row inserted | NO | NO | Default values |
+| SaveEdit | Once per save, before DB write | YES — if record is in a grid (Level ≥ 1), loop all rows | Yes — Error stops save, Warning allows override | Cross-field/cross-row validation |
+| FieldEdit | Field loses focus | NO — current row only | Yes | Single-field validation |
+| FieldChange | Value changes after FieldEdit passes | NO — current row only | NO — use field assignments only | Derived updates, display changes, button click handlers |
+| RowInit | Each row loads/displays | NO — fires per row | NO — NEVER use Error/Warning here | Hide/show, enable/disable, gray/ungray fields |
+| SavePreChange | After SaveEdit passes, before DB write | YES — same as SaveEdit | NO — NOT for validation; data manipulation only | Derive/calculate field values before SQL write |
+| SavePostChange | After DB write, before COMMIT | YES — same as SaveEdit | NO — FATAL: Error here crashes component | Post-save side effects (audit, external calls) |
+| RowInsert | New row inserted | NO | NO — FATAL: Error here crashes component | Default values for new rows |
+| Activate | Page becomes active (initial load + tab switch) | NO | NO | Page-level security, conditional field enabling |
+| PreBuild | Before component builds | NO | NO | Hide/show entire pages, set component variables |
+| PostBuild | After all RowInits complete | NO | NO | Component-wide initialization |
 
-**Critical SaveEdit rule**: If the target record is at scroll Level 1 or higher, you MUST wrap your validation in a rowset loop — the event fires once but covers all rows. Example:
+**CRITICAL: SaveEdit vs SavePreChange distinction:**
+- **SaveEdit** = VALIDATION (Error/Warning allowed, stops save). Use for: "validate", "check", "prevent save", "must be", "required on save".
+- **SavePreChange** = DATA MANIPULATION (Error/Warning NOT allowed). Use for: "calculate", "derive", "set value on save", "update field before write".
+- If you are unsure, use SaveEdit for validation and SavePreChange for computation. NEVER put Error/Warning in SavePreChange.
+
+## MULTI-LEVEL BUFFER TRAVERSAL PATTERNS
+
+Select the correct pattern based on the target record's scroll level:
+
+### Level 0 (Header) — No loop needed
 \`\`\`
-Local Rowset &rs;
-Local Row &row;
+if PO_HDR.PO_STATUS.Value = "A" then
+   Error MsgGetText(nnn, nn, "message");
+end-if;
+\`\`\`
+
+### Level 1 (Grid) — Single loop
+\`\`\`
+Local Rowset &rsL1;
+Local Row &rowL1;
 Local integer &i;
-&rs = GetLevel0()(1).GetRowset(Scroll.RECORD_NAME);
-For &i = 1 to &rs.ActiveRowCount
-   &row = &rs.GetRow(&i);
-   if &row.RECORD_NAME.FIELD.Value = condition then
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+For &i = 1 To &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   if &rowL1.PO_LINE.FIELD.Value = condition then
       Error MsgGetText(nnn, nn, "message");
    end-if;
 End-For;
 \`\`\`
-If the target record is Level 0, no loop is needed — reference fields directly.
+
+### Level 2 (Sub-grid) — Nested L1→L2 loop
+\`\`\`
+Local Rowset &rsL1, &rsL2;
+Local Row &rowL1;
+Local integer &i, &j;
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+For &i = 1 To &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   &rsL2 = &rowL1.GetRowset(Scroll.PO_LINE_SHIP);
+   For &j = 1 To &rsL2.ActiveRowCount
+      if &rsL2(&j).PO_LINE_SHIP.FIELD.Value = condition then
+         Error MsgGetText(nnn, nn, "message");
+      end-if;
+   End-For;
+End-For;
+\`\`\`
+
+### Level 3 (Sub-sub-grid) — Triple-nested L1→L2→L3 loop
+\`\`\`
+Local Rowset &rsL1, &rsL2, &rsL3;
+Local Row &rowL1, &rowL2;
+Local integer &i, &j, &k;
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+For &i = 1 To &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   &rsL2 = &rowL1.GetRowset(Scroll.PO_LINE_SHIP);
+   For &j = 1 To &rsL2.ActiveRowCount
+      &rowL2 = &rsL2.GetRow(&j);
+      &rsL3 = &rowL2.GetRowset(Scroll.PO_LINE_DISTRIB);
+      For &k = 1 To &rsL3.ActiveRowCount
+         if &rsL3(&k).PO_LINE_DISTRIB.FIELD.Value = condition then
+            Error MsgGetText(nnn, nn, "message");
+         end-if;
+      End-For;
+   End-For;
+End-For;
+\`\`\`
+
+**OBJECT ANCHORING RULE**: Each child rowset MUST come from its parent row object — NEVER from GetLevel0() directly:
+- L1: `GetLevel0()(1).GetRowset(Scroll.L1_RECORD)` ← correct
+- L2: `&rowL1.GetRowset(Scroll.L2_RECORD)` ← correct (from L1 row)
+- L3: `&rowL2.GetRowset(Scroll.L3_RECORD)` ← correct (from L2 row)
+- `GetLevel0().GetRowset(Scroll.L2_RECORD)` ← WRONG (skips parent context)
+
+**CROSS-LEVEL ACCUMULATOR PATTERN**: When summing child rows to compare with a parent:
+\`\`\`
+Local number &nTotal;
+&nTotal = 0;
+/* ... nested loops accumulate into &nTotal ... */
+if &nTotal <> PO_HDR.PO_HDR_TOTAL.Value then
+   Error MsgGetText(nnn, nn, "Total mismatch.");
+end-if;
+\`\`\`
 
 ## PHASE 3: OUTPUT FORMAT
 You MUST follow this structure exactly:

@@ -15,24 +15,65 @@
 ### Object Anchoring Rule
 Level 1+ Rowsets MUST be retrieved from the Parent Row Object anchor (`&rowL1.GetRowset(Scroll.CHILD)`) to maintain row context. avoid `GetLevel0().GetRowset(Scroll.REC)`.
 
-### Nested Buffer Traversal Pattern (L1 -> L2)
-/* Example of architectural alignment */
-Local Rowset &rsLevel1, &rsLevel2;
+Each child rowset MUST come from its parent row — NEVER from GetLevel0() directly:
+- L1: `GetLevel0()(1).GetRowset(Scroll.L1_RECORD)` ← from L0 row
+- L2: `&rowL1.GetRowset(Scroll.L2_RECORD)` ← from L1 row
+- L3: `&rowL2.GetRowset(Scroll.L3_RECORD)` ← from L2 row
+- `GetLevel0().GetRowset(Scroll.L3_RECORD)` ← WRONG (skips parent context)
+
+### Level 1 Loop (Single Grid)
+Local Rowset &rsL1;
+Local Row &rowL1;
+Local integer &i;
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+for &i = 1 to &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   /* L1 logic */
+end-for;
+
+### Level 2 Loop (L1 → L2 Nested)
+Local Rowset &rsL1, &rsL2;
 Local Row &rowL1;
 Local integer &i, &j;
-
-&rsLevel1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
-
-for &i = 1 to &rsLevel1.ActiveRowCount
-   &rowL1 = &rsLevel1.GetRow(&i);
-   &rsLevel2 = &rowL1.GetRowset(Scroll.PO_LINE_DISTRIB);
-   
-   for &j = 1 to &rsLevel2.ActiveRowCount
-      if &rsLevel2(&j).PO_LINE_DISTRIB.QTY_LN_ACCPT.Value > 0 then
-         /* Minimalist logic here */
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+for &i = 1 to &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   &rsL2 = &rowL1.GetRowset(Scroll.PO_LINE_SHIP);
+   for &j = 1 to &rsL2.ActiveRowCount
+      if &rsL2(&j).PO_LINE_SHIP.FIELD.Value = condition then
+         /* L2 logic */
       end-if;
-   end-for; 
-end-for; 
+   end-for;
+end-for;
+
+### Level 3 Loop (L1 → L2 → L3 Triple-Nested)
+/* Example: PO_HDR → PO_LINE → PO_LINE_SHIP → PO_LINE_DISTRIB */
+Local Rowset &rsL1, &rsL2, &rsL3;
+Local Row &rowL1, &rowL2;
+Local integer &i, &j, &k;
+&rsL1 = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+for &i = 1 to &rsL1.ActiveRowCount
+   &rowL1 = &rsL1.GetRow(&i);
+   &rsL2 = &rowL1.GetRowset(Scroll.PO_LINE_SHIP);
+   for &j = 1 to &rsL2.ActiveRowCount
+      &rowL2 = &rsL2.GetRow(&j);
+      &rsL3 = &rowL2.GetRowset(Scroll.PO_LINE_DISTRIB);
+      for &k = 1 to &rsL3.ActiveRowCount
+         if &rsL3(&k).PO_LINE_DISTRIB.MERCHANDISE_AMT.Value <> 0 then
+            /* L3 logic */
+         end-if;
+      end-for;
+   end-for;
+end-for;
+
+### Cross-Level Accumulator Pattern
+/* Sum child rows and compare to parent — common in SaveEdit */
+Local number &nTotal;
+&nTotal = 0;
+/* ... nested loops accumulate into &nTotal ... */
+if &nTotal <> PO_HDR.PO_HDR_AMT.Value then
+   Error MsgGet(nnn, nn, "Distribution total does not match PO header.");
+end-if;
 
 ---
 

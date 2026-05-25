@@ -644,6 +644,24 @@ router.post('/generate', async (req, res) => {
                   ))
             : null;
 
+          // 4e. Translate values — fetch XLAT values for any list_box fields
+          const xlatFields = (keyFields?.fields ?? [])
+            .filter((f) => f.is_list_box)
+            .map((f) => f.field_name || f.FIELDNAME);
+
+          const translateValues = xlatFields.length > 0
+            ? await Promise.all(
+                xlatFields.map(async (fieldName) => {
+                  const result = await tryOr(
+                    () => mcpClient.getTranslateValues(fieldName),
+                    null,
+                    `getTranslateValues(${fieldName})`
+                  );
+                  return { fieldName, values: result?.values ?? [] };
+                })
+              )
+            : [];
+
           return {
             unit,
             event:        resolvedEvent,
@@ -656,6 +674,7 @@ router.post('/generate', async (req, res) => {
             existingCode: filteredCode, // filtered by Haiku — only relevant events
             keyFields,
             targetRecord,
+            translateValues,
           };
         })
       );
@@ -727,7 +746,7 @@ router.post('/generate', async (req, res) => {
         log(`Unit ${idx + 1}: chaining prior output for ${data.targetRecord}.${data.event} (location key: ${locationKey})`);
       }
 
-      const { unit, event, confidence, eventDocs, functionDocs, classDocs, existingCode, keyFields } = data;
+      const { unit, event, confidence, eventDocs, functionDocs, classDocs, existingCode, keyFields, translateValues } = data;
 
       log(`Generating code for unit ${data.unit.executionOrder}: ${unit.requirement.slice(0, 60)}…`);
 
@@ -744,6 +763,7 @@ router.post('/generate', async (req, res) => {
         classDocs,
         requirement: unit.requirement,
         proposal,
+        translateValues,
       });
 
       // 5b. Generate code (Sonnet via llmClient)

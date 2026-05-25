@@ -102,10 +102,20 @@ async function getFunclibFunctions(funclibName) {
   return callTool('get_funclib_functions', { funclib_name: funclibName });
 }
 
+/**
+ * Get translate (XLAT) values for a field — the dropdown/radio values.
+ * @param {string} fieldName  e.g. "PO_STATUS", "APPROVAL_STATUS"
+ * @returns {Promise<unknown>}
+ */
+async function getTranslateValues(fieldName) {
+  return callTool('get_translate_values', { field_name: fieldName });
+}
+
 export {
   getComponentStructure,
   getAllRecords,
   getFieldsByRecord,
   getPeopleCodeByEvent,
   getFunclibFunctions,
+  getTranslateValues,
 };

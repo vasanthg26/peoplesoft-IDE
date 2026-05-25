@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.claude/
+dist/
+build/
+*.log
+*.trc
+.env
+.env.local
+*.tmp

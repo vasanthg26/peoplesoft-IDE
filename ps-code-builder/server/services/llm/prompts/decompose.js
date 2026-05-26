@@ -23,6 +23,7 @@ Rules:
 - Page-level security or page-specific initialization MUST use eventHint: "Activate"
 - Hiding/showing entire pages MUST use eventHint: "PreBuild"
 - Component-wide initialization after load MUST use eventHint: "PostBuild"
+- Search page defaults, restricting search results, pre-populating search keys MUST use eventHint: "SearchInit"
 - Record selection: if user says "PO Line", prefer records starting with PO_LINE. If user says "PO Header", prefer PO_HDR. Match by semantic meaning, not alphabetical order.`;
 
 /**
@@ -55,7 +56,7 @@ Return a JSON array where each element has this shape:
     "requirement": "specific validation or logic description for this unit only",
     "record": "RECORD_NAME",
     "field": "FIELD_NAME or null if record/component-level",
-    "eventHint": "FieldEdit|FieldChange|SaveEdit|SavePreChange|RowInit|Activate|PreBuild|PostBuild",
+    "eventHint": "FieldEdit|FieldChange|SaveEdit|SavePreChange|RowInit|Activate|PreBuild|PostBuild|SearchInit",
     "level": "field|record|component",
     "executionOrder": 1,
     "hasSetId": false,
@@ -75,8 +76,10 @@ Rules:
 - **DATA VALIDATION RULE**: If the requirement is a validation or data integrity check that should stop the save, use "SaveEdit" (cross-field/cross-row) or "FieldEdit" (single-field, on field exit). SaveEdit allows Error/Warning to prevent save.
 - **DATA MANIPULATION RULE**: If the requirement is about calculating, deriving, or setting field values on save (NOT validation), use "SavePreChange". SavePreChange runs after SaveEdit and does NOT allow Error/Warning.
 - **FIELD TARGET RULE**: If the validation targets a single field's value (e.g. 'Amount is not zero'), set "field" to that field name AND set "eventHint" to "SaveEdit" on that specific field. ONLY use "level": "record" if the logic involves multiple fields.
-- **BUTTON/CLICK RULE**: If the requirement involves a button click or user-triggered action, use eventHint "FieldChange" on the button field.
+- **BUTTON/CLICK RULE**: If the requirement involves a button click or user-triggered action, use eventHint "FieldChange" on the button field. The target record is typically a DERIVED record (DERIVED_*, *_WRK) that holds the button field.
 - **PAGE SECURITY RULE**: If the requirement is about page-level security, role-based access, or page-specific initialization, use eventHint "Activate".
+- **EFFECTIVE DATE RULE**: If the requirement mentions "effective date", "default EFFDT", or "history row", AND the target record's isEffDated is true, add "%EffDtCheck effective date SQL PeopleCode" AND "%Mode Add Update Correction effective date PeopleCode" to additionalRagQueries.
+- **DERIVED RECORD RULE**: If the requirement targets a button or a display-only calculated field, use the DERIVED or _WRK record that holds that field. This is the ONE exception to the RECORD PRIORITY rule — buttons legitimately live on derived records.
 - **SEARCH RULE**: Use the Field Metadata list below to scan the actual columns of every table. If the user asks to validate a specific concept (e.g. "amount", "date", "status"), read the column lists and cleanly align it with the exact Physical Record that houses that data (e.g., matching "amount" to a table that physically contains the MERCHANDISE_AMT field). NEVER guess or invent field names. If a target field is not in the list, state it explicitly.
 - Set hasSetId, isEffDated, and scrollLevel from the Field Metadata section above
 - Set requiresLoop: true if the logic needs to iterate over multiple rows (e.g. "for each line", "all lines", "every row")

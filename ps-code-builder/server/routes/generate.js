@@ -142,7 +142,7 @@ function extractScrollLevels(componentStructure) {
 
 const COMPONENT_LEVEL_EVENTS = new Set([
   'PostBuild', 'PreBuild', 'SavePreChange', 'SavePostChange',
-  'SaveEdit', 'WorkFlow',
+  'SaveEdit', 'WorkFlow', 'SearchInit',
 ]);
 
 const PAGE_LEVEL_EVENTS = new Set(['Activate', 'Deactivate']);

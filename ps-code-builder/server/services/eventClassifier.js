@@ -37,6 +37,8 @@ const EVENT_KEYWORDS = {
     'page-level security', 'tab change', 'navigate to page'],
   PreBuild: ['hide page', 'show page', 'before build', 'component variable'],
   PostBuild: ['after build', 'component load', 'after component loads'],
+  SearchInit: ['search page', 'search default', 'search criteria', 'default search',
+    'restrict search', 'pre-populate search', 'search record', 'search key'],
 };
 
 // Tiebreak order — more specific events win over generic ones
@@ -52,6 +54,7 @@ const EVENT_PRIORITY = [
   'Activate',
   'PreBuild',
   'PostBuild',
+  'SearchInit',
 ];
 
 // RAG query templates per event — each entry covers a different knowledge angle
@@ -110,6 +113,11 @@ const EVENT_RAG_QUERIES = {
     'PostBuild event component-wide initialization PeopleCode',
     'PostBuild fires after RowInit component load',
     'PostBuild vs PreBuild vs Activate difference',
+  ],
+  SearchInit: [
+    'SearchInit event search page PeopleCode when fires',
+    'SearchInit default search criteria pre-populate keys',
+    'SearchInit vs RowInit vs FieldDefault difference',
   ],
 };
 

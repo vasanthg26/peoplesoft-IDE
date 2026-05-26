@@ -11,6 +11,7 @@ const getAllRecords          = require('./tools/getAllRecords');
 const getFieldsByRecord     = require('./tools/getFieldsByRecord');
 const getPeopleCodeByEvent  = require('./tools/getPeopleCodeByEvent');
 const getFunclibFunctions   = require('./tools/getFunclibFunctions');
+const getTranslateValues    = require('./tools/getTranslateValues');
 
 const TOOLS = [
   getComponentStructure,
@@ -18,6 +19,7 @@ const TOOLS = [
   getFieldsByRecord,
   getPeopleCodeByEvent,
   getFunclibFunctions,
+  getTranslateValues,
 ];
 
 // ── Graceful shutdown ────────────────────────────────────────────────────────

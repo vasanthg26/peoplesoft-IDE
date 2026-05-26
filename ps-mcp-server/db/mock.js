@@ -49,18 +49,18 @@ const MOCK_DATA = {
     record: 'PO_HDR',
     source: 'mock',
     fields: [
-      { field_num: 1,  field_name: 'BUSINESS_UNIT', field_type: 0, length: 5,  is_key: true,  is_required: true,  is_search_key: true,  is_list_box: false },
-      { field_num: 2,  field_name: 'PO_ID',          field_type: 0, length: 10, is_key: true,  is_required: true,  is_search_key: true,  is_list_box: false },
-      { field_num: 3,  field_name: 'PO_DT',          field_type: 4, length: 10, is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
-      { field_num: 4,  field_name: 'VENDOR_ID',       field_type: 0, length: 10, is_key: false, is_required: true,  is_search_key: true,  is_list_box: false },
-      { field_num: 5,  field_name: 'VENDOR_SETID',    field_type: 0, length: 5,  is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
-      { field_num: 6,  field_name: 'VNDR_LOC',        field_type: 0, length: 10, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
-      { field_num: 7,  field_name: 'PO_STATUS',       field_type: 0, length: 1,  is_key: false, is_required: true,  is_search_key: true,  is_list_box: true  },
-      { field_num: 8,  field_name: 'PO_REF',          field_type: 0, length: 30, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
-      { field_num: 9,  field_name: 'CURRENCY_CD',     field_type: 0, length: 3,  is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
-      { field_num: 10, field_name: 'PO_HDR_TOTAL',       field_type: 2, length: 27, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
-      { field_num: 11, field_name: 'APPROVAL_STATUS', field_type: 0, length: 1,  is_key: false, is_required: false, is_search_key: true,  is_list_box: true  },
-      { field_num: 12, field_name: 'COMMENTS',        field_type: 1, length: 254,is_key: false, is_required: false, is_search_key: false, is_list_box: false },
+      { field_num: 1,  field_name: 'BUSINESS_UNIT', field_label: 'Business Unit',     field_type: 0, length: 5,  is_key: true,  is_required: true,  is_search_key: true,  is_list_box: false },
+      { field_num: 2,  field_name: 'PO_ID',          field_label: 'PO Number',         field_type: 0, length: 10, is_key: true,  is_required: true,  is_search_key: true,  is_list_box: false },
+      { field_num: 3,  field_name: 'PO_DT',          field_label: 'PO Date',           field_type: 4, length: 10, is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
+      { field_num: 4,  field_name: 'VENDOR_ID',       field_label: 'Vendor ID',         field_type: 0, length: 10, is_key: false, is_required: true,  is_search_key: true,  is_list_box: false },
+      { field_num: 5,  field_name: 'VENDOR_SETID',    field_label: 'Vendor SetID',      field_type: 0, length: 5,  is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
+      { field_num: 6,  field_name: 'VNDR_LOC',        field_label: 'Vendor Location',   field_type: 0, length: 10, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
+      { field_num: 7,  field_name: 'PO_STATUS',       field_label: 'PO Status',         field_type: 0, length: 1,  is_key: false, is_required: true,  is_search_key: true,  is_list_box: true  },
+      { field_num: 8,  field_name: 'PO_REF',          field_label: 'PO Reference',      field_type: 0, length: 30, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
+      { field_num: 9,  field_name: 'CURRENCY_CD',     field_label: 'Currency Code',     field_type: 0, length: 3,  is_key: false, is_required: true,  is_search_key: false, is_list_box: false },
+      { field_num: 10, field_name: 'PO_HDR_TOTAL',    field_label: 'PO Header Total',   field_type: 2, length: 27, is_key: false, is_required: false, is_search_key: false, is_list_box: false },
+      { field_num: 11, field_name: 'APPROVAL_STATUS', field_label: 'Approval Status',   field_type: 0, length: 1,  is_key: false, is_required: false, is_search_key: true,  is_list_box: true  },
+      { field_num: 12, field_name: 'COMMENTS',        field_label: 'Comments',           field_type: 1, length: 254,is_key: false, is_required: false, is_search_key: false, is_list_box: false },
     ],
   },
 
@@ -111,6 +111,22 @@ For &i = 1 To ActiveRowCount(PO_LINE.PO_LINE_NBR)
    FetchValue(PO_LINE.UNIT_PRICE, &i) * GetCurrencyRate(PO_HDR.CURRENCY_CD);
 End-For;`,
       },
+    ],
+  },
+
+  // ─── Tool 6: get_translate_values ────────────────────────────────────────────
+  // SQL8 — returns active translate (XLAT) values for a field
+  get_translate_values: {
+    field:  'PO_STATUS',
+    source: 'mock',
+    values: [
+      { field_value: 'A', long_name: 'Approved',    short_name: 'Appr' },
+      { field_value: 'C', long_name: 'Complete',     short_name: 'Cmpl' },
+      { field_value: 'D', long_name: 'Dispatched',   short_name: 'Disp' },
+      { field_value: 'I', long_name: 'Initial',      short_name: 'Init' },
+      { field_value: 'O', long_name: 'Open',          short_name: 'Open' },
+      { field_value: 'P', long_name: 'Pending',       short_name: 'Pend' },
+      { field_value: 'X', long_name: 'Canceled',      short_name: 'Canc' },
     ],
   },
 
@@ -184,17 +200,34 @@ function getMock(toolName, params = {}) {
   // Support both named params {record_name} (direct HTTP test) and array binds ['PO_LINE'] (runQuery wrapper)
   const requestedRecord = Array.isArray(params) ? (params[0] || '') : (params.record_name || '');
   
+  // Support translate values for different fields
+  const requestedField = Array.isArray(params) ? (params[0] || '') : (params.field_name || '');
+
+  if (toolName === 'get_translate_values' && requestedField === 'APPROVAL_STATUS') {
+    return {
+      field: 'APPROVAL_STATUS',
+      source: 'mock',
+      values: [
+        { field_value: 'A', long_name: 'Approved',        short_name: 'Appr' },
+        { field_value: 'D', long_name: 'Denied',          short_name: 'Deny' },
+        { field_value: 'P', long_name: 'Pending Approval', short_name: 'Pend' },
+      ],
+    };
+  }
+
   if (toolName === 'get_fields_by_record' && requestedRecord.includes('LINE')) {
     return {
       record: requestedRecord,
       source: 'mock',
       fields: [
-        { field_num: 1, field_name: 'BUSINESS_UNIT', field_type: 0, length: 5 },
-        { field_num: 2, field_name: 'PO_ID', field_type: 0, length: 10 },
-        { field_num: 3, field_name: 'LINE_NBR', field_type: 2, length: 5 },
-        { field_num: 4, field_name: 'LINE_AMOUNT', field_type: 3, length: 26 },
-        { field_num: 5, field_name: 'UNIT_PRICE', field_type: 3, length: 26 },
-        { field_num: 6, field_name: 'QTY_PO', field_type: 2, length: 15 },
+        { field_num: 1, field_name: 'BUSINESS_UNIT', field_label: 'Business Unit',       field_type: 0, length: 5 },
+        { field_num: 2, field_name: 'PO_ID',         field_label: 'PO Number',            field_type: 0, length: 10 },
+        { field_num: 3, field_name: 'LINE_NBR',      field_label: 'Line Number',          field_type: 2, length: 5 },
+        { field_num: 4, field_name: 'MERCHANDISE_AMT', field_label: 'Merchandise Amount', field_type: 3, length: 26 },
+        { field_num: 5, field_name: 'UNIT_PRICE',    field_label: 'Unit Price',            field_type: 3, length: 26 },
+        { field_num: 6, field_name: 'QTY_PO',        field_label: 'Quantity',              field_type: 2, length: 15 },
+        { field_num: 7, field_name: 'PO_STATUS',     field_label: 'Line Status',           field_type: 0, length: 1 },
+        { field_num: 8, field_name: 'CANCEL_STATUS', field_label: 'Cancel Status',         field_type: 0, length: 1 },
       ],
     };
   }

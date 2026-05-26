@@ -126,6 +126,9 @@ if &nTotal <> PO_HDR.PO_HDR_TOTAL.Value then
 end-if;
 \`\`\`
 
+## TRANSLATE VALUES RULE
+If the metadata block contains a "TRANSLATE VALUES" section, these are the **only** valid coded values for that field. Use the exact field_value strings (e.g., "A", "X", "P") in your comparisons — NEVER use full descriptions like "Approved" as comparison values. Example: \`if RECORD.PO_STATUS.Value = "A" then\` (not \`= "Approved"\`).
+
 ## PHASE 3: OUTPUT FORMAT
 You MUST follow this structure exactly:
 

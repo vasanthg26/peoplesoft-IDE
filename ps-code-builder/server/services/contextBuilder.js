@@ -49,6 +49,12 @@ function formatScrollLevels(componentStructure) {
   }).join('\n');
 }
 
+/** Decode PeopleSoft numeric field_type to human-readable type name. */
+const FIELD_TYPE_NAMES = {
+  0: 'Char', 1: 'Long Char', 2: 'Number', 3: 'Signed Number',
+  4: 'Date', 5: 'Time', 6: 'DateTime', 8: 'Image/Attachment',
+};
+
 /** Compact field list — field_name, type, and label only. Minimises tokens. */
 function formatKeyFields(keyFields) {
   const fields = keyFields?.fields ?? (Array.isArray(keyFields) ? keyFields : null);
@@ -57,10 +63,30 @@ function formatKeyFields(keyFields) {
     .map((f) => {
       const name  = f.field_name  || f.FIELDNAME || '';
       const label = f.field_label || f.FIELD_LABEL || name;
-      const type  = f.data_type   || f.type || 'String';
+      const rawType = f.field_type ?? f.data_type ?? f.type;
+      const type  = (typeof rawType === 'number') ? (FIELD_TYPE_NAMES[rawType] || 'Unknown') : (rawType || 'String');
       const key   = f.is_key      ? ' [KEY]' : '';
-      return `  ${name} (${type})${key} — ${label}`;
+      const xlat  = f.is_list_box ? ' [XLAT]' : '';
+      return `  ${name} (${type})${key}${xlat} — ${label}`;
     })
+    .join('\n');
+}
+
+/** Format translate values for injection into the prompt context. */
+function formatTranslateValues(translateValues) {
+  if (!translateValues || !Array.isArray(translateValues) || translateValues.length === 0) {
+    return '';
+  }
+
+  return translateValues
+    .map(({ fieldName, values }) => {
+      if (!values || !Array.isArray(values) || values.length === 0) return null;
+      const valLines = values
+        .map((v) => `    "${v.field_value}" = ${v.long_name}`)
+        .join('\n');
+      return `  ${fieldName}:\n${valLines}`;
+    })
+    .filter(Boolean)
     .join('\n');
 }
 
@@ -75,7 +101,7 @@ function formatExistingCode(existingCode, targetField) {
 
   const fieldEvents  = existingCode.field_events  || existingCode.peoplecode || [];
   const recordEvents = (existingCode.record_events || []).filter((e) =>
-    ['SavePreChange', 'SaveEdit', 'SavePostChange', 'RowInit', 'PreBuild', 'PostBuild']
+    ['SavePreChange', 'SaveEdit', 'SavePostChange', 'RowInit', 'PreBuild', 'PostBuild', 'Activate']
       .includes(e.event_name)
   );
 
@@ -176,6 +202,7 @@ ${fieldLines}`;
  * @property {string}   requirement         - Developer's NL input
  * @property {string}   [proposal]          - Analyst's approved technical proposal markdown (from propose phase)
  * @property {object}   [parsedContext]     - Paste mode: output of codeParser.parseCode()
+ * @property {Array}    [translateValues]   - Translate (XLAT) values for list box fields
  */
 
 /**
@@ -197,6 +224,7 @@ async function build({
   requirement,
   proposal = null, // analyst's approved proposal — field resolutions from the propose phase
   parsedContext = null, // paste mode: replaces MCP-derived metadata block
+  translateValues = null, // XLAT values for dropdown/radio fields
 }) {
   const metadataBlock = parsedContext
     ? formatPasteMetadata(parsedContext)
@@ -206,7 +234,10 @@ async function build({
 ${formatScrollLevels(componentStructure)}
 
 # RECORD FIELDS (Target: ${existingCode?.record || 'UNKNOWN'}):
-${formatKeyFields(keyFields)}`;
+${formatKeyFields(keyFields)}${translateValues && translateValues.length > 0 ? `
+
+# TRANSLATE VALUES (dropdown/radio options for [XLAT] fields):
+${formatTranslateValues(translateValues)}` : ''}`;
 
   const prompt = `### [BLOCK:METADATA]
 ${metadataBlock}

@@ -123,3 +123,38 @@ Before generation, provide a unified technical proposal explaining:
 You must act as a "Surgical Integrator" that prioritizes existing variable nomenclature.
 - **ACTION**: If the `existingCode` in context is truncated, you MUST call `get_peoplecode_by_event`.
 - **HARVEST**: Identify if a Rowset for the current level is already instantiated (e.g., `&rs_lines`). Use that name instead of a fresh declaration.
+
+---
+
+## 6. CURRENT ROW ACCESS (FieldEdit / FieldChange)
+In field-level events, the current row is implicit:
+- **Same record**: `RECORD.FIELD.Value` — direct reference, no loop
+- **Sibling record on same row**: `GetRow().GetRecord(Record.SIBLING_REC).FIELD.Value`
+- **Parent level from child**: `GetLevel0()(1).PARENT_REC.FIELD.Value`
+- **NEVER** loop in FieldEdit/FieldChange — the event fires on the current row only
+
+---
+
+## 7. DERIVED / WORK RECORDS
+- DERIVED_*, *_WRK records = page-only fields (buttons, display, toggles). NOT database-backed.
+- Use for: button FieldChange, display calculations, toggle flags.
+- NEVER use for: validation, data manipulation when a transactional record exists.
+- Access at L0: `DERIVED_PO.BUTTON_FIELD.Value`
+- Access in grid: `GetRow().GetRecord(Record.DERIVED_PO).CALC_FIELD.Value`
+
+---
+
+## 8. %MODE AND EFFECTIVE DATING
+- `%Mode`: "A" (Add), "U" (Update), "L" (Update/Display All), "C" (Correction)
+- For effective-dated records, check %Mode before defaulting EFFDT
+- Add mode: default EFFDT = %Date, EFFSEQ = 0
+- Correction mode: editing in place — no new EFFDT row
+- Use `%EffDtCheck` Meta-SQL for effective-date subqueries
+- Use `%CurrentDateIn` for platform-independent date comparisons in SQL
+
+---
+
+## 9. %COMPONENT / EVALUATE PATTERN
+- If existing code has `Evaluate %Component`, inject into the correct `When` branch
+- Do NOT add `Evaluate %Component` unless existing code already uses it
+- `%Component` returns the current component name (read-only)

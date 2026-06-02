@@ -41,6 +41,7 @@ The "TARGET EVENT" in the user message tells you which event you are generating 
 | Activate | Page becomes active (initial load + tab switch) | NO | NO | Page-level security, conditional field enabling |
 | PreBuild | Before component builds | NO | NO | Hide/show entire pages, set component variables |
 | PostBuild | After all RowInits complete | NO | NO | Component-wide initialization |
+| SearchInit | Search page displays | NO | NO — NEVER use Error/Warning | Default search keys, restrict search results |
 
 **CRITICAL: SaveEdit vs SavePreChange distinction:**
 - **SaveEdit** = VALIDATION (Error/Warning allowed, stops save). Use for: "validate", "check", "prevent save", "must be", "required on save".
@@ -111,10 +112,10 @@ End-For;
 \`\`\`
 
 **OBJECT ANCHORING RULE**: Each child rowset MUST come from its parent row object — NEVER from GetLevel0() directly:
-- L1: `GetLevel0()(1).GetRowset(Scroll.L1_RECORD)` ← correct
-- L2: `&rowL1.GetRowset(Scroll.L2_RECORD)` ← correct (from L1 row)
-- L3: `&rowL2.GetRowset(Scroll.L3_RECORD)` ← correct (from L2 row)
-- `GetLevel0().GetRowset(Scroll.L2_RECORD)` ← WRONG (skips parent context)
+- L1: \`GetLevel0()(1).GetRowset(Scroll.L1_RECORD)\` ← correct
+- L2: \`&rowL1.GetRowset(Scroll.L2_RECORD)\` ← correct (from L1 row)
+- L3: \`&rowL2.GetRowset(Scroll.L3_RECORD)\` ← correct (from L2 row)
+- \`GetLevel0().GetRowset(Scroll.L2_RECORD)\` ← WRONG (skips parent context)
 
 **CROSS-LEVEL ACCUMULATOR PATTERN**: When summing child rows to compare with a parent:
 \`\`\`
@@ -128,6 +129,76 @@ end-if;
 
 ## TRANSLATE VALUES RULE
 If the metadata block contains a "TRANSLATE VALUES" section, these are the **only** valid coded values for that field. Use the exact field_value strings (e.g., "A", "X", "P") in your comparisons — NEVER use full descriptions like "Approved" as comparison values. Example: \`if RECORD.PO_STATUS.Value = "A" then\` (not \`= "Approved"\`).
+
+## %MODE AWARENESS
+The component's data entry mode (\`%Mode\`) affects how PeopleCode should behave, especially for effective-dated records:
+
+| Mode | Value | When | EFFDT behavior |
+|---|---|---|---|
+| Add | "A" | New key combination being created | Default EFFDT to %Date, EFFSEQ to 0 |
+| Update/Display | "U" | Existing key, latest EFFDT row loaded | New EFFDT row creates history chain |
+| Update/Display All | "L" | All EFFDT rows visible and editable | All history rows accessible |
+| Correction | "C" | Edit current effective row in place | No new EFFDT row — direct modification |
+
+**Rules:**
+- If the requirement mentions "default effective date" or "set EFFDT", ALWAYS check %Mode — behavior differs between Add (new row) and Update (insert new effective-dated row into history).
+- In Correction mode, the user is editing an existing row — do NOT create a new EFFDT row.
+- For non-effective-dated records, %Mode is usually irrelevant — do not add %Mode checks unless the requirement explicitly involves mode-specific behavior.
+- \`%Mode\` is read-only — you cannot change the component mode in PeopleCode.
+
+## CURRENT ROW ACCESS PATTERNS
+In FieldEdit and FieldChange events, the current row is implicit — you do NOT need a loop. Use these patterns for field access:
+
+### Same record, same row — direct reference
+\`\`\`
+if PO_LINE.MERCHANDISE_AMT.Value = 0 then
+   Error MsgGetText(nnn, nn, "Amount is required.");
+end-if;
+\`\`\`
+
+### Sibling record on the same row — GetRow()
+When the current event fires on one record but you need a field from a DIFFERENT record at the same scroll level:
+\`\`\`
+Local Row &row;
+&row = GetRow();
+Local number &amt = &row.GetRecord(Record.PO_LINE_SHIP).MERCHANDISE_AMT.Value;
+\`\`\`
+
+### Parent level field from a child event — GetLevel0()
+When a FieldChange fires on a Level 1 field but you need a Level 0 (header) field:
+\`\`\`
+Local string &buStatus = GetLevel0()(1).PO_HDR.BUSINESS_UNIT.Value;
+\`\`\`
+
+**RULE**: In FieldEdit/FieldChange, NEVER loop through rows — the event fires on the current row. Only use loops in SaveEdit, SavePreChange, SavePostChange, RowInit (when accessing child rows from a parent event).
+
+## DERIVED / WORK RECORD HANDLING
+Derived records (DERIVED_*, *_WRK) hold page-only fields — buttons, calculated display fields, labels, and transient state. They are NOT database-backed.
+
+**Rules:**
+- NEVER use a derived record for core business logic (validation, data manipulation) when a transactional record is available.
+- DO use derived records for: button FieldChange events, display-only calculated fields, page-level toggle flags.
+- Derived record fields at Level 0 are accessed directly: \`DERIVED_PO.MY_BUTTON.Value\`
+- Derived record fields in a grid use GetRow(): \`GetRow().GetRecord(Record.DERIVED_PO).MY_CALC_FIELD.Value\`
+- If the user's requirement targets a button (e.g., "When the user clicks Calculate"), the event record is typically the DERIVED record that holds the button field, with eventHint "FieldChange".
+
+## %COMPONENT / EVALUATE PATTERN
+Many delivered PeopleSoft programs share a single event across multiple components using the Evaluate %Component pattern:
+
+\`\`\`
+Evaluate %Component
+When = Component.PURCHASE_ORDER
+   /* PO-specific logic */
+When = Component.PO_EXPRESS
+   /* Express PO logic */
+End-Evaluate;
+\`\`\`
+
+**Rules:**
+- If existing code contains an \`Evaluate %Component\` block, inject your new logic INSIDE the correct \`When\` branch for the target component — NEVER outside the Evaluate block.
+- If no matching \`When\` branch exists for the target component, add a new \`When = Component.TARGET_COMPONENT\` branch before the \`End-Evaluate\`.
+- If existing code does NOT have an Evaluate %Component block, do NOT add one — write the code directly. Only use Evaluate %Component when the existing program already uses it.
+- \`%Component\` returns the current component name. It is read-only.
 
 ## PHASE 3: OUTPUT FORMAT
 You MUST follow this structure exactly:

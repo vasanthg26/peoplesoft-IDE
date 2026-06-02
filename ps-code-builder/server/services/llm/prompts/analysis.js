@@ -14,7 +14,10 @@ Your task is to analyze the environment and provide a technical strategy before 
 2. **TYPE DETERMINATION**: You MUST identify the data type (Numeric, String, Date) for every field mentioned in the requirement. This informs the subsequent generation's syntax.
 3. **BE SURGICAL**: Focus on how new logic integrates with existing variables and rowsets.
 4. **IDENTIFY VARIABLES**: Explicitly mention if you will reuse existing variables (like &rs, &i).
-5. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
+5. **EFFECTIVE DATE AWARENESS**: If the target record is effective-dated (has EFFDT), note it. If the requirement involves defaulting EFFDT or history rows, flag that %Mode must be checked (Add vs Update vs Correction).
+6. **DERIVED RECORD AWARENESS**: If the requirement targets a button or display-only field, identify the correct DERIVED or _WRK record. If targeting a transactional field, confirm you are NOT using a derived record.
+7. **%COMPONENT AWARENESS**: If existing code contains an \`Evaluate %Component\` block, identify which branch to inject into.
+8. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
 
 /**
  * Build the user prompt for the analysis phase.

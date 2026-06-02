@@ -101,7 +101,7 @@ function formatExistingCode(existingCode, targetField) {
 
   const fieldEvents  = existingCode.field_events  || existingCode.peoplecode || [];
   const recordEvents = (existingCode.record_events || []).filter((e) =>
-    ['SavePreChange', 'SaveEdit', 'SavePostChange', 'RowInit', 'PreBuild', 'PostBuild', 'Activate']
+    ['SavePreChange', 'SaveEdit', 'SavePostChange', 'RowInit', 'PreBuild', 'PostBuild', 'Activate', 'SearchInit']
       .includes(e.event_name)
   );
 

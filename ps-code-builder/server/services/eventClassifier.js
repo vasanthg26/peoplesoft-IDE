@@ -122,6 +122,36 @@ const EVENT_RAG_QUERIES = {
 };
 
 // ---------------------------------------------------------------------------
+// Application Class detection
+// ---------------------------------------------------------------------------
+// Application Classes are NOT an event — they are an OOP construct invoked FROM
+// an event. So we keep the normal event classification but, when class intent is
+// detected, surface an extra RAG query so the generator gets App Class patterns
+// in its "Class and Method Reference" context block.
+
+const APP_CLASS_KEYWORDS = [
+  'application class', 'app class', 'application package', 'app package',
+  'object-oriented', 'object oriented',
+  'create a class', 'create class', 'new class', 'use a class',
+  'method', 'class method', 'instantiate', 'extends', 'implements',
+  'interface', 'inherit', 'subclass', 'reusable class', 'oop',
+];
+
+const APP_CLASS_RAG_QUERY =
+  'Application Class import class method property extends create instantiate PeopleCode';
+
+/**
+ * Detect whether a requirement calls for an Application Class implementation.
+ * @param {string} requirement
+ * @returns {boolean}
+ */
+function detectAppClass(requirement) {
+  if (!requirement || !requirement.trim()) return false;
+  const normalised = requirement.toLowerCase();
+  return APP_CLASS_KEYWORDS.some((kw) => normalised.includes(kw));
+}
+
+// ---------------------------------------------------------------------------
 // Confidence thresholds
 // ---------------------------------------------------------------------------
 
@@ -191,7 +221,13 @@ function classify(requirement) {
   const event = best.score > 0 ? best.event : 'FieldEdit';
   const ragQueries = buildRagQueries(event, requirement);
 
-  return { event, confidence, ragQueries };
+  // App Class is orthogonal to event choice — append its RAG query (merged into
+  // classDocs downstream) so the generator gets OOP patterns when class intent
+  // is present. The host event (FieldChange, SaveEdit, etc.) is still chosen above.
+  const isAppClass = detectAppClass(requirement);
+  if (isAppClass) ragQueries.push(APP_CLASS_RAG_QUERY);
+
+  return { event, confidence, ragQueries, isAppClass };
 }
 
 // ---------------------------------------------------------------------------
@@ -236,4 +272,4 @@ function buildRagQueries(event, requirement) {
   return [base[0], base[1], contextQuery];
 }
 
-export { classify };
+export { classify, detectAppClass, APP_CLASS_RAG_QUERY };

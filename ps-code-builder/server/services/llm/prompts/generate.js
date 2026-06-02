@@ -200,6 +200,65 @@ End-Evaluate;
 - If existing code does NOT have an Evaluate %Component block, do NOT add one — write the code directly. Only use Evaluate %Component when the existing program already uses it.
 - \`%Component\` returns the current component name. It is read-only.
 
+## APPLICATION CLASS PATTERNS
+Application Classes are PeopleSoft's object-oriented construct (\`import\`, \`class\`, \`method\`, \`property\`, \`extends\`). Use them ONLY when the requirement or existing code calls for reuse or OOP — NOT for surgical, single-event inline changes.
+
+**WHEN to generate an Application Class:**
+- The requirement explicitly mentions "class", "method", "application package", or "object-oriented".
+- The logic must be reused across multiple events/components/AE programs.
+- You are extending or overriding a delivered framework class.
+- The existing code in context already instantiates a class — keep the event thin and call/extend that class.
+
+**WHEN NOT to:** Single-event, surgical validation or default belongs INLINE in the event. Do NOT introduce a class for event-local logic — that violates RULE 9 (Surgical Minimalism).
+
+**Class structure** — declaration block (signatures only) above, implementations below \`end-class\`:
+\`\`\`
+import PKG_PO:Validation:*;
+
+class PurchaseOrderValidator
+   method PurchaseOrderValidator();                  /* constructor = same name as class */
+   method ValidateTotal(&poTotal as number) Returns boolean;
+   property number LineCount readonly;
+private
+   instance Rowset &rsLines;
+end-class;
+
+method PurchaseOrderValidator
+   &rsLines = GetLevel0()(1).GetRowset(Scroll.PO_LINE);
+   %This.LineCount = &rsLines.ActiveRowCount;
+end-method;
+
+method ValidateTotal
+   /+ &poTotal as number +/
+   /+ Returns boolean +/
+   Local number &sum = 0, &i;
+   For &i = 1 To &rsLines.ActiveRowCount
+      &sum = &sum + &rsLines(&i).PO_LINE.MERCHANDISE_AMT.Value;
+   End-For;
+   Return (&sum = &poTotal);
+end-method;
+\`\`\`
+
+**Instantiate and call from an event** (keep event code minimal):
+\`\`\`
+import PKG_PO:Validation:PurchaseOrderValidator;
+Local PKG_PO:Validation:PurchaseOrderValidator &validator;
+&validator = create PKG_PO:Validation:PurchaseOrderValidator();
+If Not &validator.ValidateTotal(PO_HDR.PO_AMT_TOTAL.Value) Then
+   Error MsgGetText(11100, 10, "PO total does not match line total.");
+End-If;
+\`\`\`
+
+**Rules:**
+- \`import\` statements go at the very TOP, before the \`class\` declaration (or before event logic when instantiating).
+- Declare object variables with the FULLY-QUALIFIED package path: \`Local PKG:Sub:ClassName &obj;\`.
+- Use \`create PKG:Sub:ClassName(args)\` to instantiate (prefer over \`CreateObject\` when the path is known at design time).
+- Repeat method signatures in the implementation with \`/+ &arg as type +/\` and \`/+ Returns type +/\` annotations — PeopleTools requires these.
+- Use \`%This\` for the current instance, \`%Super.Method()\` to call the overridden parent method.
+- The constructor is the method whose name matches the class.
+- Override a parent method by re-declaring it with the same signature in a subclass that \`extends\` the parent.
+- Do NOT reference \`private\` members from outside the class.
+
 ## PHASE 3: OUTPUT FORMAT
 You MUST follow this structure exactly:
 

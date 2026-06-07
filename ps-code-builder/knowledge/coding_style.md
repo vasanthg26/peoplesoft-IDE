@@ -158,3 +158,16 @@ In field-level events, the current row is implicit:
 - If existing code has `Evaluate %Component`, inject into the correct `When` branch
 - Do NOT add `Evaluate %Component` unless existing code already uses it
 - `%Component` returns the current component name (read-only)
+
+---
+
+## 10. APPLICATION CLASSES (OOP)
+- Use a class ONLY for reuse/OOP or when the requirement says "class"/"method"/"package". Surgical single-event logic stays INLINE (Rule 9).
+- `import PKG:Sub:ClassName;` at the very top, before the `class` declaration or event logic.
+- Declaration block (`class ... end-class`) holds signatures only; implementations go below it as `method Name ... end-method`.
+- Constructor = method with the same name as the class.
+- Declare object vars with the full path: `Local PKG:Sub:ClassName &obj;`
+- Instantiate with `create PKG:Sub:ClassName(args)` (prefer over `CreateObject` when path is known).
+- Repeat signatures in implementations with `/+ &arg as type +/` and `/+ Returns type +/`.
+- `%This` = current instance; `%Super.Method()` = parent's overridden method; `extends` for inheritance.
+- When an event already calls a class, keep the event thin — call/extend the class, don't duplicate logic inline.

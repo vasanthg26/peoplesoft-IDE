@@ -24,6 +24,7 @@ Rules:
 - Hiding/showing entire pages MUST use eventHint: "PreBuild"
 - Component-wide initialization after load MUST use eventHint: "PostBuild"
 - Search page defaults, restricting search results, pre-populating search keys MUST use eventHint: "SearchInit"
+- An Application Class is NOT an event — it is OOP logic invoked FROM an event. If the requirement mentions a "class", "method", "application package", or reusable OOP logic, still pick the host event (FieldChange, SaveEdit, etc.) that will instantiate the class, and add an Application Class RAG query (see DECOMPOSE rules).
 - Record selection: if user says "PO Line", prefer records starting with PO_LINE. If user says "PO Header", prefer PO_HDR. Match by semantic meaning, not alphabetical order.`;
 
 /**
@@ -80,6 +81,7 @@ Rules:
 - **PAGE SECURITY RULE**: If the requirement is about page-level security, role-based access, or page-specific initialization, use eventHint "Activate".
 - **EFFECTIVE DATE RULE**: If the requirement mentions "effective date", "default EFFDT", or "history row", AND the target record's isEffDated is true, add "%EffDtCheck effective date SQL PeopleCode" AND "%Mode Add Update Correction effective date PeopleCode" to additionalRagQueries.
 - **DERIVED RECORD RULE**: If the requirement targets a button or a display-only calculated field, use the DERIVED or _WRK record that holds that field. This is the ONE exception to the RECORD PRIORITY rule — buttons legitimately live on derived records.
+- **APPLICATION CLASS RULE**: If the requirement mentions a "class", "method", "application package", "object-oriented", or logic that must be reused across events/components, keep eventHint as the host event that calls the class, and add "Application Class import class method property extends create instantiate PeopleCode" to additionalRagQueries. Do NOT invent an eventHint of "AppClass" — it is not an event.
 - **SEARCH RULE**: Use the Field Metadata list below to scan the actual columns of every table. If the user asks to validate a specific concept (e.g. "amount", "date", "status"), read the column lists and cleanly align it with the exact Physical Record that houses that data (e.g., matching "amount" to a table that physically contains the MERCHANDISE_AMT field). NEVER guess or invent field names. If a target field is not in the list, state it explicitly.
 - Set hasSetId, isEffDated, and scrollLevel from the Field Metadata section above
 - Set requiresLoop: true if the logic needs to iterate over multiple rows (e.g. "for each line", "all lines", "every row")

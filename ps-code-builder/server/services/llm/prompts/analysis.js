@@ -17,7 +17,8 @@ Your task is to analyze the environment and provide a technical strategy before 
 5. **EFFECTIVE DATE AWARENESS**: If the target record is effective-dated (has EFFDT), note it. If the requirement involves defaulting EFFDT or history rows, flag that %Mode must be checked (Add vs Update vs Correction).
 6. **DERIVED RECORD AWARENESS**: If the requirement targets a button or display-only field, identify the correct DERIVED or _WRK record. If targeting a transactional field, confirm you are NOT using a derived record.
 7. **%COMPONENT AWARENESS**: If existing code contains an \`Evaluate %Component\` block, identify which branch to inject into.
-8. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
+8. **APPLICATION CLASS AWARENESS**: Decide whether the logic belongs in an Application Class or inline. Recommend a class ONLY when the requirement explicitly asks for one ("class", "method", "application package"), the logic must be reused across events/components, or the existing code already instantiates a class. For surgical, single-event logic, recommend inline PeopleCode (a class would violate Surgical Minimalism). If a class is warranted, state the package path (\`PKG:Sub:ClassName\`), the method(s), and how the event will \`import\`/\`create\` it.
+9. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
 
 /**
  * Build the user prompt for the analysis phase.

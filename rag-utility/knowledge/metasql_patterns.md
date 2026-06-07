@@ -27,6 +27,22 @@ AND A.EFFDT = (SELECT MAX(A1.EFFDT) FROM PS_DEPT_TBL A1
 
 Use %EffDtCheck whenever querying an effective-dated table (DEPT_TBL, JOB, POSITION_DATA, LOCATION_TBL, etc.) to get the current effective row. Always pair with %CurrentDateIn or a specific date bind.
 
+## %EffSeqCheck — Effective-Sequence Filtering
+
+For records that have BOTH EFFDT and EFFSEQ (multiple actions on the same date, e.g. JOB, COMPENSATION), %EffDtCheck alone resolves the date but not the sequence. Pair it with %EffSeqCheck to select the highest EFFSEQ for the resolved EFFDT.
+
+Syntax: `%EffSeqCheck(record_alias, outer_alias, as_of_date)`
+
+```sql
+SELECT A.ACTION, A.ACTION_REASON
+FROM PS_JOB A
+WHERE A.EMPLID = :1 AND A.EMPL_RCD = :2
+AND %EffDtCheck(JOB A1, A, %CurrentDateIn)
+AND %EffSeqCheck(JOB A2, A, %CurrentDateIn)
+```
+
+Expands to a MAX(EFFSEQ) correlated subquery for the resolved EFFDT. Omitting %EffSeqCheck on an EFFSEQ record returns the wrong row whenever same-day actions exist.
+
 ## %CurrentDateIn and %CurrentDateOut
 
 - `%CurrentDateIn` — returns the current date in platform-native format for use in WHERE clauses and INSERTs. On Oracle: SYSDATE. On SQL Server: GETDATE().

@@ -146,6 +146,13 @@ The component's data entry mode (\`%Mode\`) affects how PeopleCode should behave
 - For non-effective-dated records, %Mode is usually irrelevant — do not add %Mode checks unless the requirement explicitly involves mode-specific behavior.
 - \`%Mode\` is read-only — you cannot change the component mode in PeopleCode.
 
+**Effective-date SQL rules (when the target record is effective-dated):**
+- Resolve the current row with \`%EffDtCheck\` (and \`%EffSeqCheck\` if the record has EFFSEQ) rather than hand-written MAX(EFFDT) subqueries when possible.
+- Resolve "as of" the BUSINESS event's date — if a transaction or parent row has its own EFFDT, pass that date, NOT \`%Date\`/SYSDATE.
+- Always wrap date binds in SQLExec with \`%DateIn(:n)\`; filter \`EFF_STATUS = 'A'\` unless inactive rows are explicitly wanted.
+- For a same-date insert on an EFFSEQ record, set the next sequence with \`NVL(MAX(EFFSEQ), -1) + 1\` for that EFFDT.
+- Prefer \`Warning\` (override allowed) for advisory future-dated-row conflicts; use \`Error\` only when the change must be blocked.
+
 ## CURRENT ROW ACCESS PATTERNS
 In FieldEdit and FieldChange events, the current row is implicit — you do NOT need a loop. Use these patterns for field access:
 

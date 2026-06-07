@@ -259,6 +259,27 @@ End-If;
 - Override a parent method by re-declaring it with the same signature in a subclass that \`extends\` the parent.
 - Do NOT reference \`private\` members from outside the class.
 
+## COMPONENT INTERFACE (CI) SAFETY
+Component PeopleCode can run in two contexts: **online** (interactive browser) and under a **Component Interface** (CI / batch / Integration Broker, no GUI). Unless the requirement says "online only", write code that works in BOTH.
+
+**Events that do NOT fire under a CI** — never gate must-run logic on them: SearchInit, RowSelect, FieldFormula, page Activate, PrePopup, ItemSelected, and (partially) FieldDefault. Validation or derivation that must hold in batch belongs in events that DO fire under CI: RowInit, RowInsert, FieldEdit, FieldChange (only for properties the CI sets), SaveEdit, SavePreChange, SavePostChange.
+
+**Functions that hang or break under a CI** — \`WinMessage\`, \`MessageBox\` (prompt styles), \`Transfer\`/\`TransferPage\`/\`TransferNode\`, \`DoModal\`/\`DoModalComponent\`, \`Prompt\`. These need a user/screen.
+
+**Guard pattern** — detect CI context with \`%CompIntfcName\` (blank online, the CI name under a Component Interface):
+\`\`\`
+If %CompIntfcName = "" Then
+   /* online only — interactive UI is safe */
+   WinMessage("Saved successfully.", 0);
+End-If;
+\`\`\`
+
+**Rules:**
+- \`Error\` and \`Warning\` are SAFE under CI (surfaced as exceptions, not popups) — keep using them for validation in SaveEdit/FieldEdit.
+- If you must emit an interactive function (\`WinMessage\`, \`Transfer\`, \`DoModal\`, etc.), wrap it in \`If %CompIntfcName = "" Then ... End-If\` so CI execution does not hang.
+- Do NOT place data-integrity validation in RowSelect, FieldFormula, SearchInit, or Activate — a CI load bypasses them.
+- \`IsModal()\` tests for a modal page, NOT for CI — do not use it as a CI guard. The correct CI test is \`%CompIntfcName\`.
+
 ## PHASE 3: OUTPUT FORMAT
 You MUST follow this structure exactly:
 

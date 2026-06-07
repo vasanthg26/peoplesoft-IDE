@@ -8,7 +8,8 @@
     "dev:server": "node --watch server/index.js",
     "dev:client": "vite client",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "vite build client"
+    "build": "vite build client",
+    "test": "node --test server/services/*.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

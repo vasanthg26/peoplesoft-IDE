@@ -18,7 +18,8 @@ Your task is to analyze the environment and provide a technical strategy before 
 6. **DERIVED RECORD AWARENESS**: If the requirement targets a button or display-only field, identify the correct DERIVED or _WRK record. If targeting a transactional field, confirm you are NOT using a derived record.
 7. **%COMPONENT AWARENESS**: If existing code contains an \`Evaluate %Component\` block, identify which branch to inject into.
 8. **APPLICATION CLASS AWARENESS**: Decide whether the logic belongs in an Application Class or inline. Recommend a class ONLY when the requirement explicitly asks for one ("class", "method", "application package"), the logic must be reused across events/components, or the existing code already instantiates a class. For surgical, single-event logic, recommend inline PeopleCode (a class would violate Surgical Minimalism). If a class is warranted, state the package path (\`PKG:Sub:ClassName\`), the method(s), and how the event will \`import\`/\`create\` it.
-9. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
+9. **COMPONENT INTERFACE (CI) AWARENESS**: Unless the requirement says "online only", assume the component may also run under a Component Interface (CI/batch). Flag two risks: (a) the target event does NOT fire under CI (SearchInit, RowSelect, FieldFormula, page Activate, FieldDefault) — if must-run logic is placed there it will be bypassed in batch, so recommend a CI-firing event (SaveEdit/FieldEdit/RowInit/SavePreChange) instead; (b) the logic needs an interactive function (\`WinMessage\`, \`Transfer\`, \`DoModal\`) — note it must be guarded with \`If %CompIntfcName = "" Then\`. \`Error\`/\`Warning\` are CI-safe.
+10. **FORMAT**: Return ONLY markdown using the specific Phase 1 headers.`;
 
 /**
  * Build the user prompt for the analysis phase.

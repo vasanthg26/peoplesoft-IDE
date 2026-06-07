@@ -171,3 +171,12 @@ In field-level events, the current row is implicit:
 - Repeat signatures in implementations with `/+ &arg as type +/` and `/+ Returns type +/`.
 - `%This` = current instance; `%Super.Method()` = parent's overridden method; `extends` for inheritance.
 - When an event already calls a class, keep the event thin — call/extend the class, don't duplicate logic inline.
+
+---
+
+## 11. COMPONENT INTERFACE (CI) SAFETY
+- Component code can run online OR under a Component Interface (CI/batch). Write for both unless told "online only".
+- Events skipped under CI: SearchInit, RowSelect, FieldFormula, page Activate, FieldDefault — never put must-run logic there.
+- Events that fire under CI: RowInit, RowInsert, FieldEdit, FieldChange (CI-set props), SaveEdit, SavePreChange, SavePostChange.
+- Interactive functions hang under CI: `WinMessage`, `MessageBox` (prompts), `Transfer*`, `DoModal*`, `Prompt`. Guard with `If %CompIntfcName = "" Then ... End-If`.
+- `Error`/`Warning` are CI-safe (surfaced as exceptions). `%CompIntfcName` (not `IsModal()`) is the CI test.

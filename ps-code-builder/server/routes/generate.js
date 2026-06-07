@@ -30,6 +30,7 @@ import { decompose }               from '../services/requirementDecomposer.js';
 import { filterRelevantCode }      from '../services/codeContextFilter.js';
 import { analyze }                 from '../services/analysisAgent.js';
 import { parseCode, buildFallback as parseFallback } from '../services/codeParser.js';
+import { lintPeopleCode }         from '../services/peopleCodeLinter.js';
 import notifier                   from '../services/notifier.js';
 
 const router = Router();
@@ -407,13 +408,24 @@ async function handlePasteMode(req, res, { action, componentName, requirement, s
 
   log('Paste mode generation complete');
 
+  const finalEvent  = suggestedEvent  || eventHint;
+  const finalRecord = suggestedRecord || parsedContext.primaryRecord;
+  const lint = lintPeopleCode(generatedCode, {
+    event:        finalEvent,
+    targetRecord: finalRecord,
+    knownFields:  extractFieldNames(keyFields),
+  });
+  if (lint.summary.total > 0) {
+    log(`Paste lint: ${lint.summary.errors} error(s), ${lint.summary.warnings} warning(s), ${lint.summary.info} info`);
+  }
+
   return res.json({
     success:          true,
     requirementUnits: 1,
     codeBlocks: [{
       unitRequirement:     requirement,
-      suggestedEvent:      suggestedEvent  || eventHint,
-      suggestedRecord:     suggestedRecord || parsedContext.primaryRecord,
+      suggestedEvent:      finalEvent,
+      suggestedRecord:     finalRecord,
       suggestedField:      suggestedField  || '',
       confidence,
       locationFormat:      locationFormat  || 'RECORD.Event',
@@ -422,6 +434,7 @@ async function handlePasteMode(req, res, { action, componentName, requirement, s
       suggestedPage:       suggestedPage   || '',
       generatedCode,
       explanation,
+      lint,
     }],
     ragSources:      sources,
     parsedContext,
@@ -838,6 +851,16 @@ router.post('/generate', async (req, res) => {
 
       allRagSources.push(...unitSources);
 
+      // 5c. Post-generation lint pass — catch structural/hallucination issues
+      const lint = lintPeopleCode(generatedCode, {
+        event:        finalEvent,
+        targetRecord: finalRecord,
+        knownFields:  extractFieldNames(keyFields),
+      });
+      if (lint.summary.total > 0) {
+        log(`Unit ${unit.executionOrder} lint: ${lint.summary.errors} error(s), ${lint.summary.warnings} warning(s), ${lint.summary.info} info`);
+      }
+
       codeBlocks.push({
         unitRequirement:     unit.requirement,
         suggestedEvent:      finalEvent,
@@ -850,6 +873,7 @@ router.post('/generate', async (req, res) => {
         suggestedPage:       finalPage,
         generatedCode,
         explanation,
+        lint,
       });
     }
 

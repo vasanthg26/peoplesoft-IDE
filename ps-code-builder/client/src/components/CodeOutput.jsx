@@ -68,6 +68,67 @@ function highlightLine(line, lineIdx) {
   return tokens;
 }
 
+// ── Lint Findings Panel ─────────────────────────────────────────────────────
+const SEVERITY_META = {
+  error:   { color: 'var(--error, #e5484d)',   icon: '✕', label: 'Error' },
+  warning: { color: 'var(--warning, #f5a623)', icon: '!', label: 'Warning' },
+  info:    { color: 'var(--text-muted)',        icon: 'i', label: 'Info' },
+};
+
+function LintPanel({ lint }) {
+  if (!lint || !Array.isArray(lint.findings) || lint.findings.length === 0) return null;
+
+  const { errors = 0, warnings = 0, info = 0 } = lint.summary || {};
+  const order = { error: 0, warning: 1, info: 2 };
+  const findings = [...lint.findings].sort(
+    (a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9)
+  );
+
+  return (
+    <div style={{
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm)',
+      overflow: 'hidden',
+      fontSize: '12.5px',
+    }}>
+      <div style={{
+        display: 'flex', gap: '12px', alignItems: 'center',
+        padding: '8px 12px',
+        background: 'var(--bg-subtle, rgba(255,255,255,0.03))',
+        borderBottom: '1px solid var(--border)',
+        fontWeight: 600,
+      }}>
+        <span>Validation</span>
+        {errors > 0   && <span style={{ color: SEVERITY_META.error.color }}>✕ {errors} error{errors !== 1 ? 's' : ''}</span>}
+        {warnings > 0 && <span style={{ color: SEVERITY_META.warning.color }}>! {warnings} warning{warnings !== 1 ? 's' : ''}</span>}
+        {info > 0     && <span style={{ color: SEVERITY_META.info.color }}>i {info} info</span>}
+      </div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {findings.map((f, i) => {
+          const meta = SEVERITY_META[f.severity] || SEVERITY_META.info;
+          return (
+            <li key={i} style={{
+              display: 'flex', gap: '8px', alignItems: 'baseline',
+              padding: '6px 12px',
+              borderTop: i === 0 ? 'none' : '1px solid var(--border)',
+              lineHeight: 1.45,
+            }}>
+              <span style={{ color: meta.color, fontWeight: 700, minWidth: '14px' }}>{meta.icon}</span>
+              {f.line != null && (
+                <span style={{ color: 'var(--text-muted)', minWidth: '46px' }}>line {f.line}</span>
+              )}
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {f.message}
+                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>({f.rule})</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 // ── Single Code Panel ───────────────────────────────────────────────────────
 function CodePanel({ codeBlock, label }) {
   const [copied, setCopied] = useState(false);
@@ -149,6 +210,8 @@ function CodePanel({ codeBlock, label }) {
           </pre>
         </div>
       </div>
+
+      <LintPanel lint={codeBlock?.lint} />
 
       {codeBlock?.explanation && (
         <div style={{
